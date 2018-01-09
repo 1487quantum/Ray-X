@@ -62,7 +62,7 @@ float calCenter(int j, int dr) {
 
 //pc->percentage, j->srv indx, dir->d
 void servoOut(float pc, int j, int d) {
-  out =  amp * sin( 2 * PI * (pc) * f + calPhi(j, NUM_SERVOS)) + calCenter(j, d);
+  out =  amp * sin( 2 * PI * (pc) * f + d*calPhi(j, NUM_SERVOS)) + calCenter(j, d);
   if (DEBUG) {
     Serial.print(out);
     if (j < NUM_SERVOS - 1)  Serial.print(",");
