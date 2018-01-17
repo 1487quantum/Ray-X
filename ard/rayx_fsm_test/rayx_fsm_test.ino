@@ -2,6 +2,7 @@
 
 bool hlt = false;         //Halt program, turn on LED pin 13
 int sts = 0;              //Initial state is idle
+int prevState = 0;
 int led = 13;
 
 void setup() {
@@ -18,7 +19,6 @@ void state(int s) {
     case 1: //FWD
       for (int i = 3; i < 9; i++) {
         digitalWrite(i, i == 4 ? 1 : 0);
-
       }
       break;
     case 2: //BWD
@@ -29,7 +29,6 @@ void state(int s) {
     case 3: //LFT
       for (int i = 3; i < 9; i++) {
         digitalWrite(i, i == 6 ? 1 : 0);
-
       }
       break;
     case 4: //RGT
@@ -38,10 +37,14 @@ void state(int s) {
       }
       break;
     case 5: //HLT
-      for (int i = 3; i < 9; i++) {
-        digitalWrite(i, i == 8 ? 1 : 0);
+      if (prevState == 0) {
+        //Halt only in stop/idle state
+        for (int i = 3; i < 9; i++) {
+          digitalWrite(i, i == 8 ? 1 : 0);
+        }
+        hlt = true;
       }
-      hlt = true;
+
       break;
     /*
       case 6: //RST
@@ -69,7 +72,13 @@ int dt = 0;
 void loop() {
   while (Serial.available())
   {
+    prevState = sts;
     dt = Serial.read() - '0';
+    if (dt > 0 && dt < 7) {
+
+    } else {
+      dt = 0;
+    }
     sts = dt;
     Serial.println(dt);
   }
