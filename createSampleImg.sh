@@ -1,13 +1,29 @@
 #!/bin/sh
-# [Under development]
-# A script to simplify opencv sample image creation (Based on https://memememememememe.me/post/training-haar-cascades/ tutorial, step 2c)
+```
+[Under development]
+A script to simplify opencv sample image creation (Based on https://memememememememe.me/post/training-haar-cascades/ tutorial, combined step 2c + 2d)
+[Directory tree]
+Images
+--(srcImgDir)
+----normal
+----cropped
+--negativeImgDir
+--sampleImgDir
+----des (tmp folder)
+
+- The target image will have the format a{id}.jpg (Example: a1.jpg)
+```
+#Path VAR
 mainpath=$PWD
-IPATH="$PWD/gate_img/cropped/"
+bgpath=''"$mainpath"'/negativeImgDir/negatives.txt'		# Background image directory
+spath=''"$mainpath"'/sampleImgDir'				# Directory path for sample image directory
+dpath=''"$spath"'/des'						# Directory path for sample image description output
+IPATH="$PWD/gate_img/cropped/"					# Default path for "main" image to be overlayed
 clear
 while true
 do
   # (1) prompt user, and read command line argument
-  printf "~~ Image Merger v1.0.0 ~~\nCreation of positive training images for Haar Cascade\n\n"
+  printf "~~ Image Merger v1.0.12 ~~\nCreation of positive training images for Haar Cascade\n\n"
   read -p "Use default image directory path? [Y/n] (Default: $IPATH)" answer
 
   # (2) handle the input we were given
@@ -32,10 +48,8 @@ cd $IPATH
 #Save all the images into a text file
 ls -1 *.jpg > imgList.txt
 #echo $PWD
-#Get number of lines (or image files)
-tmp="$(wc -l "$PWD/imgList.txt")"
-#Remove th efile path behind
-NUM=${tmp% *}
+tmp="$(wc -l "$PWD/imgList.txt")"				# Get number of lines (or image files)
+NUM=${tmp% *}							# Remove the file path behind
 printf 'Added '"$NUM"' img file link into imgList.txt\n'
 #Read imgList.txt & Split them up for image creation
 while read fp; do
@@ -43,11 +57,28 @@ while read fp; do
 	fpath=''"$PWD"'/'"$fp"''				# Image to be overlayed added directory
 	nameonly=${fp%.*}
 	#echo $fpath
-	bgpath=''"$mainpath"'/negativeImgDir/negatives.txt'			# Background image directory
-	dpath=''"$mainpath"'/sampleImgDir/'"$nameonly"'.txt'		# Directory path for description output
 	#Create sample
-	opencv_createsamples -img $fpath -bg $bgpath -info $dpath \
-	-num 128 -maxxangle 0.0 -maxyangle 0.0 \
-	-maxzangle 0.3 -bgcolor 255 -bgthresh 8 \
+	sfpath=''"$spath"'/'"$nameonly"'.txt'			# Directory path for description output
+	#Sample setting: numOfImg->300, bgcolor: 255 (white), maximum angle: 0.4 (rad?)
+	opencv_createsamples -img $fpath -bg $bgpath -info $sfpath \
+	-num 300 -maxxangle 0.0 -maxyangle 0.0 \
+	-maxzangle 0.4 -bgcolor 255 -bgthresh 8 \
 	-w 48 -h 48
 done < ''"$PWD"'/imgList.txt'
+#Now for step 2d
+printf "Sample image Creation complete, moving to step 2d -> Merging description file for more images\n\n"
+cd $spath							# Goto sampleImgDir
+cat a*.txt > positives.txt					# Combine all images description into positive.txt
+#Create des directory if it does not exist
+if [ ! -d "$dpath" ]; then
+	mkdir $dpath
+fi
+mv *.txt $dpath							# Create & Move all description files into a new directory (des)
+tmp_i="$(ls "$spath" | wc -l )"					# Get number of image files
+tmp_i=$(($tmp_i-1))						# Remove count of the directory (as ls consider directory as one item)
+echo 'Number of IMG:'$tmp_i					
+mv ''"$dpath"'/positives.txt' .					# Move positives.txt up one directory (where the main images are in)
+#Combine the description files above into one vector file 
+opencv_createsamples -info ''"$spath"'/positives.txt' -bg $bgpath \
+-vec ''"$spath"'/cropped.vec' \
+-num $tmp_i -w 48 -h 48
