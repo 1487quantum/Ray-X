@@ -5,6 +5,12 @@
 
 //Initialization
 void setParams(char aLow, char aHigh , float frq, bool dir) {
+  //Incase order is wrong
+  if(aLow>aHigh){
+    char tmp = aLow;
+    aLow = aHigh;
+    aHigh = tmp;
+  }
   for (int i = 0; i < 2; i++) {
     aSt[i] = aSt[i] > 0 ? (i == 0 ? aLow : aHigh) : aSt[i]; //Amplitude: if a >0: set a, else default val
   }
@@ -34,7 +40,7 @@ void servoOut(float pc, char ai, char j, char d) {
 }
 
 void setup() {
-  setParams(20, 40, 1, 1);
+  setParams(10, 20, 1, 1);
   //Initialise servos
   for (int j = 9; j < 12; j++) {
     servosL[j - 9].attach(j);
@@ -57,4 +63,3 @@ void loop() {
   }
   delay(1);
 }
-
